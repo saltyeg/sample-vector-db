@@ -1,0 +1,15 @@
+build/
+renders/
+models/
+.venv/
+*.db
+*.db-wal
+*.db-shm
+*.user
+*.suo
+*.ncb
+*.sdf
+*.opensdf
+*.VC.db
+.vs/
+CMakeUserPresets.json
