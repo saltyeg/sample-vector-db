@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0)'
+        required: true
+        default: 'v0.1.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine release tag and version
+        id: meta
+        shell: pwsh
+        run: |
+          $tag = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.tag }}" } else { "${{ github.ref_name }}" }
+          $ver = $tag -replace '^v', ''
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Build all targets (Release)
+        shell: pwsh
+        run: .\build.ps1
+
+      - name: Run unit tests
+        shell: pwsh
+        run: .\build\Release\svdb-tests_artefacts\Release\svdb-tests.exe
+
+      - name: Package Windows x64 release archive
+        shell: pwsh
+        run: .\scripts\package-release.ps1 -Version "${{ steps.meta.outputs.version }}"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: sample-vector-db ${{ steps.meta.outputs.tag }}
+          generate_release_notes: true
+          body: |
+            ## sample-vector-db ${{ steps.meta.outputs.tag }} (Windows x64)
+
+            Hybrid C++ DSP + CLAP (`Xenova/clap-htsat-unfused` via ONNX Runtime DirectML/CPU) vector sample browser for FL Studio (VST3 Instrument + Standalone).
+
+            ### Included in `sample-vector-db-v${{ steps.meta.outputs.version }}-win64.zip`
+            - **`sample-vector-db.vst3`** — VST3 Instrument for FL Studio Channel Rack (MIDI playable, `C5` = unity pitch)
+            - **`bin/sample-vector-db.exe`** — Floating standalone browser with `Pin` always-on-top mode
+            - **`bin/svdb-index.exe`** — Model downloader, incremental scanner, semantic query, retag, layout, and sample auto-namer
+            - **`install.ps1`** — 1-click installer for VST3, ONNX Runtime + DirectML DLLs, and CLAP ONNX models (~590 MB)
+
+            ### Quick Install
+            1. Extract the zip and run `install.ps1` in an **Administrator PowerShell**:
+               ```powershell
+               powershell -ExecutionPolicy Bypass -File .\install.ps1
+               ```
+            2. In FL Studio, run **Options → Manage Plugins → Find installed plugins** and load `sample-vector-db` under **Generators → VST3**, or run `bin\sample-vector-db.exe`.
+            3. Click **Index** inside the app (or run `.\bin\svdb-index.exe scan "C:\path\to\Samples"`) to index your library.
+          files: |
+            build/release-pkg/sample-vector-db-v${{ steps.meta.outputs.version }}-win64.zip
