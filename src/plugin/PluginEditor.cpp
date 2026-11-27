@@ -20,19 +20,7 @@ SampleVectorDBEditor::SampleVectorDBEditor (SampleVectorDBProcessor& proc)
       processor (proc),
       auditionBar (proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone)
 {
-    // Default to 2x original dimensions (1960x1160), clamped cleanly to the primary display work area.
-    int initW = 1960;
-    int initH = 1160;
-    if (const auto* disp = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay())
-    {
-        const auto work = disp->userBounds.toNearestInt();
-        if (work.getWidth() > 800 && work.getHeight() > 500)
-        {
-            initW = std::min (initW, work.getWidth() - 48);
-            initH = std::min (initH, work.getHeight() - 72);
-        }
-    }
-    setSize (initW, initH);
+    setSize (980, 580);
     setResizable (true, true);
     setResizeLimits (720, 420, 3840, 2160);
 
